@@ -1,0 +1,49 @@
+name: Release
+
+# Builds Mailbun for macOS, Windows, and Linux and publishes the installers
+# to a GitHub Release. electron-builder can only build for its host OS, so we
+# run one job per platform. Triggered by pushing a version tag, e.g.:
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      # OAuth client IDs are baked into release builds. Stored as a repo
+      # secret (the whole credentials.ts file contents, base64-encoded) so
+      # they never live in the repo. Skipped if the secret isn't set —
+      # the build still works, users just fall back to .env.
+      - name: Restore baked OAuth credentials
+        if: ${{ env.MAILBUN_CREDENTIALS_B64 != '' }}
+        env:
+          MAILBUN_CREDENTIALS_B64: ${{ secrets.MAILBUN_CREDENTIALS_B64 }}
+        shell: bash
+        run: echo "$MAILBUN_CREDENTIALS_B64" | base64 -d > electron/credentials.ts
+
+      - name: Build and publish
+        env:
+          # electron-builder publishes the artifacts to this repo's Releases.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run electron:build -- --publish always
+
+permissions:
+  contents: write

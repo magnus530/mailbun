@@ -1,0 +1,26 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+
+# Local data — contains email cache and encrypted credentials
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+
+# Electron
+electron/dist/
+server/bundle/
+release/
+# Baked OAuth client IDs for release builds — never commit real IDs
+electron/credentials.ts
+
+# Editor
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,53 @@
+appId: com.mailbun.desktop
+productName: Mailbun
+copyright: Copyright © 2026
+
+directories:
+  output: release
+  buildResources: build
+
+# What ends up inside the app bundle. The server is a single esbuild bundle
+# (server/bundle/server.mjs) with every dependency inlined except the native
+# better-sqlite3, so we don't ship server/dist or the workspace packages.
+# electron-builder traces production node_modules from the root package.json
+# (better-sqlite3 + electron-updater) automatically.
+files:
+  - electron/dist/**/*
+  - server/bundle/**/*
+  - client/dist/**/*
+  - package.json
+
+# better-sqlite3 is a native module — it can't run from inside the asar
+# archive and must be unpacked. The server bundle is unpacked too so the
+# main process can ESM-import it as a real file. electron-builder rebuilds
+# native deps for Electron's ABI automatically during packaging.
+asar: true
+asarUnpack:
+  - server/bundle/**/*
+  - "**/node_modules/better-sqlite3/**/*"
+
+# Update feed + download host. electron-updater checks here for new versions;
+# the GitHub Actions workflow (.github/workflows/release.yml) publishes the
+# installers on a version tag. Replace owner with your GitHub username.
+publish:
+  provider: github
+  owner: magnus530
+  repo: mailbun
+
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  target:
+    - dmg          # user download
+    - zip          # required for electron-updater auto-update on macOS
+
+win:
+  icon: build/icon.ico
+  target:
+    - nsis         # installer + supports auto-update
+
+linux:
+  category: Network
+  icon: build/icon.png
+  target:
+    - AppImage     # supports auto-update

@@ -1,0 +1,13 @@
+{
+  "name": "mailclient",
+  "short_name": "mailclient",
+  "description": "Local-first multi-account email client.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

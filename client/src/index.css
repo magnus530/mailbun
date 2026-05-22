@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-border bg-bg-subtle px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-accent focus:ring-1 focus:ring-accent;
+  }
+  .btn-primary {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-fg-muted hover:bg-bg-hover hover:text-fg disabled:cursor-not-allowed disabled:opacity-50;
+  }
+}
+
+/* Inline HTML email styling — keep it readable without overriding sender intent. */
+.prose-mail { word-wrap: break-word; overflow-wrap: anywhere; }
+.prose-mail a { color: rgb(var(--accent)); text-decoration: underline; }
+.prose-mail blockquote {
+  border-left: 3px solid rgb(var(--border));
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: rgb(var(--fg-muted));
+}
+.prose-mail img { max-width: 100%; height: auto; border-radius: 6px; }
+/* Tables in HTML emails routinely have hard-coded widths well beyond the
+   pane. Force them to behave; for the rare unavoidable wide table, the
+   container's overflow-x-auto provides a horizontal scroll. */
+.prose-mail table { max-width: 100%; width: auto; border-collapse: collapse; }
+.prose-mail td, .prose-mail th { word-break: break-word; }
+.prose-mail pre {
+  background: rgb(var(--bg-subtle));
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.prose-mail code {
+  background: rgb(var(--bg-subtle));
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+.prose-mail p { margin: 0.5em 0; }
+.prose-mail hr { border-color: rgb(var(--border)); }
+
+:root {
+  --bg: 11 14 20;
+  --bg-subtle: 17 21 29;
+  --bg-hover: 25 30 40;
+  --border: 35 41 53;
+  --fg: 230 233 240;
+  --fg-muted: 160 167 184;
+  --fg-subtle: 110 118 138;
+  --accent: 96 165 250;
+  --accent-hover: 59 130 246;
+}
+
+/* Light theme is opt-in via Settings; we don't follow prefers-color-scheme.
+   Default is always dark so first-time users get a consistent look. */
+:root.theme-light {
+  --bg: 255 255 255;
+  --bg-subtle: 247 248 250;
+  --bg-hover: 238 240 244;
+  --border: 224 227 234;
+  --fg: 24 27 33;
+  --fg-muted: 87 94 110;
+  --fg-subtle: 130 138 154;
+  --accent: 37 99 235;
+  --accent-hover: 29 78 216;
+}
+
+html, body { height: 100%; }
+body { font-family: Inter, system-ui, sans-serif; }
+
+/* App zoom. `zoom` reflows layout (unlike transform: scale, which would
+   leave gaps / overflow), and dividing #root's own size by the zoom factor
+   keeps it filling the viewport exactly at any level. --zoom is set on
+   <html> by the store (and pre-render bootstrap in main.tsx). */
+:root { --zoom: 1; }
+#root {
+  zoom: var(--zoom);
+  width: calc(100% / var(--zoom));
+  height: calc(100% / var(--zoom));
+}
+
+/* mailbun logo — the source PNG is a black silhouette. Invert it to white on
+   the dark theme (default); leave it black on the opt-in light theme. */
+.app-logo { filter: invert(1); }
+:root.theme-light .app-logo { filter: invert(0); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--fg-subtle)); }
