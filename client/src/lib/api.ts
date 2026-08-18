@@ -57,7 +57,7 @@ export const api = {
   folders: () => req<FolderDto[]>("GET", "/api/folders"),
 
   // Threads
-  threads: (q: { folderRole?: string; accountId?: number; tag?: string; starred?: boolean; limit?: number; offset?: number; }) => {
+  threads: (q: { folderRole?: string; accountId?: number; category?: string; tag?: string; starred?: boolean; limit?: number; offset?: number; }) => {
     const qs = new URLSearchParams(
       Object.entries(q)
         .filter(([, v]) => v !== undefined && v !== "" && v !== false)

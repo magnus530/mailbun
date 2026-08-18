@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Inbox, MailOpen, Star, Archive, Trash2, X, Check, Minus, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Inbox, MailOpen, Star, Archive, Trash2, X, Check, Minus, ChevronDown, ChevronLeft, ChevronRight, Tag as TagIcon } from "lucide-react";
 import clsx from "clsx";
 import type { ThreadDto } from "@mailclient/shared";
-import { optimisticallyMarkThreadRead, THREAD_LIST_PAGE_SIZE, useAppStore } from "../lib/store";
+import { inboxViewActive, optimisticallyMarkThreadRead, THREAD_LIST_PAGE_SIZE, useAppStore } from "../lib/store";
 import { useThreads } from "../lib/hooks";
 import { api } from "../lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,8 +11,10 @@ import { formatRowDate } from "../lib/format";
 
 function useCurrentThreads(limit: number, offset: number) {
   const sel = useAppStore((s) => s.selection);
+  const inboxTab = useAppStore((s) => s.inboxTab);
   if (sel.kind === "folder") {
-    return useThreads({ folderRole: sel.role, limit, offset });
+    const category = sel.role === "inbox" ? inboxTab : undefined;
+    return useThreads({ folderRole: sel.role, category, limit, offset });
   }
   if (sel.kind === "starred") {
     return useThreads({ starred: true, limit, offset });
@@ -21,7 +23,8 @@ function useCurrentThreads(limit: number, offset: number) {
     if (sel.view === "starred") {
       return useThreads({ accountId: sel.accountId, starred: true, limit, offset });
     }
-    return useThreads({ accountId: sel.accountId, folderRole: sel.view, limit, offset });
+    const category = sel.view === "inbox" ? inboxTab : undefined;
+    return useThreads({ accountId: sel.accountId, folderRole: sel.view, category, limit, offset });
   }
   if (sel.kind === "tag") {
     return useThreads({ tag: sel.name, limit, offset });
@@ -143,6 +146,7 @@ export function ThreadList() {
           />
         )}
       </div>
+      {inboxViewActive(sel) ? <InboxTabs /> : null}
       {bulkError ? (
         <div className="shrink-0 border-b border-rose-500/30 bg-rose-500/10 px-4 py-1.5 text-xs text-rose-300">
           {bulkError}
@@ -254,6 +258,38 @@ function BulkToolbar({
           <X className="h-4 w-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+function InboxTabs() {
+  const inboxTab = useAppStore((s) => s.inboxTab);
+  const setInboxTab = useAppStore((s) => s.setInboxTab);
+  const tabs: { key: "primary" | "promotions"; label: string; Icon: typeof Inbox }[] = [
+    { key: "primary", label: "Primary", Icon: Inbox },
+    { key: "promotions", label: "Promotions", Icon: TagIcon },
+  ];
+  return (
+    <div className="flex h-10 shrink-0 items-stretch border-b border-border bg-bg px-2">
+      {tabs.map(({ key, label, Icon }) => {
+        const active = inboxTab === key;
+        return (
+          <button
+            key={key}
+            onClick={() => setInboxTab(key)}
+            className={clsx(
+              "relative flex items-center gap-2 px-4 text-sm font-medium transition",
+              active ? "text-accent" : "text-fg-muted hover:text-fg",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+            {active ? (
+              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" />
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

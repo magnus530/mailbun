@@ -24,21 +24,22 @@ export function Layout() {
   // visible list without prop-drilling. Same limit/offset so j/k cycles
   // within the page the user is actually looking at.
   const sel = useAppStore((s) => s.selection);
+  const inboxTab = useAppStore((s) => s.inboxTab);
   const page = useAppStore((s) => s.listPage);
   const limit = THREAD_LIST_PAGE_SIZE;
   const offset = page * THREAD_LIST_PAGE_SIZE;
   const folderQ = useThreads(
     sel.kind === "folder"
-      ? { folderRole: sel.role, limit, offset }
+      ? { folderRole: sel.role, category: sel.role === "inbox" ? inboxTab : undefined, limit, offset }
       : sel.kind === "starred"
       ? { starred: true, limit, offset }
       : sel.kind === "account"
       ? sel.view === "starred"
         ? { accountId: sel.accountId, starred: true, limit, offset }
-        : { accountId: sel.accountId, folderRole: sel.view, limit, offset }
+        : { accountId: sel.accountId, folderRole: sel.view, category: sel.view === "inbox" ? inboxTab : undefined, limit, offset }
       : sel.kind === "tag"
       ? { tag: sel.name, limit, offset }
-      : { folderRole: "inbox", limit, offset },
+      : { folderRole: "inbox", category: inboxTab, limit, offset },
   );
   const searchQ = useQuery({
     queryKey: ["search", sel.kind === "search" ? sel.query : null, limit, offset],

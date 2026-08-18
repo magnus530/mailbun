@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { FolderRole } from "@mailclient/shared";
+import type { FolderRole, MessageCategory } from "@mailclient/shared";
 
 // Views that can be picked at the top level or scoped to one account.
 // "starred" is virtual (filter on m.starred=1). The rest map to folder roles.
@@ -15,6 +15,15 @@ export type Selection =
   | { kind: "search"; query: string };
 
 export type Theme = "dark" | "light";
+
+// True when the current selection is showing an inbox (top-level or a single
+// account's inbox) — the only place the Primary/Promotions tabs apply.
+export function inboxViewActive(sel: Selection): boolean {
+  return (
+    (sel.kind === "folder" && sel.role === "inbox") ||
+    (sel.kind === "account" && sel.view === "inbox")
+  );
+}
 
 // Page size for the thread list. Shared between ThreadList (renders the page
 // and the prev/next buttons) and Layout (queries the same window so j/k
@@ -36,9 +45,12 @@ interface AppState {
   searchInput: string;
   theme: Theme;
   listPage: number;
+  // Gmail-style inbox sub-tab. Only surfaces when the inbox is selected.
+  inboxTab: MessageCategory;
   sidebarOpen: boolean;
   zoom: number;
   setSelection: (s: Selection) => void;
+  setInboxTab: (t: MessageCategory) => void;
   selectThread: (id: number | null) => void;
   setSearchInput: (q: string) => void;
   openCompose: (replyTo?: number | null) => void;
@@ -117,9 +129,13 @@ export const useAppStore = create<AppState>((set) => ({
   searchInput: "",
   theme: readSavedTheme(),
   listPage: 0,
+  inboxTab: "primary",
   sidebarOpen: readSavedSidebarOpen(),
   zoom: readSavedZoom(),
-  setSelection: (selection) => set({ selection, selectedThreadId: null, listPage: 0 }),
+  // Reset the sub-tab to Primary when the selection changes, so switching
+  // folders never leaves you stranded on a Promotions view of a non-inbox.
+  setSelection: (selection) => set({ selection, selectedThreadId: null, listPage: 0, inboxTab: "primary" }),
+  setInboxTab: (inboxTab) => set({ inboxTab, selectedThreadId: null, listPage: 0 }),
   selectThread: (id) => set({ selectedThreadId: id }),
   setSearchInput: (q) => set({ searchInput: q }),
   openCompose: (replyTo = null) => set({ composing: { open: true, replyTo } }),

@@ -196,6 +196,17 @@ const migrations: { id: number; sql: string }[] = [
          OR json_type(flags_json) <> 'array';
     `,
   },
+  {
+    // Inbox categorization (Gmail-style Primary/Promotions tabs). Each message
+    // is tagged 'primary' | 'promotions' at persist time from its headers.
+    // Existing rows default to 'primary'; the one-time backfill recategorizes
+    // them from sender/subject (raw headers weren't retained for old mail).
+    id: 4,
+    sql: `
+      ALTER TABLE messages ADD COLUMN category TEXT NOT NULL DEFAULT 'primary';
+      CREATE INDEX idx_messages_category ON messages(category);
+    `,
+  },
 ];
 
 export function applyMigrations(db: Db) {

@@ -104,6 +104,7 @@ export async function registerRoutes(app: FastifyInstance) {
     return threadsRepo.list({
       folderRole: q.folderRole as FolderRole | undefined,
       accountId: q.accountId ? Number(q.accountId) : undefined,
+      category: q.category === "promotions" || q.category === "primary" ? q.category : undefined,
       tag: q.tag,
       starred: q.starred === "true",
       limit: q.limit ? Number(q.limit) : undefined,

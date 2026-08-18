@@ -6,6 +6,7 @@ import type { AddressDto } from "@mailclient/shared";
 import { db } from "../db/index.js";
 import { paths } from "../paths.js";
 import { recomputeThread, resolveThreadId } from "./threading.js";
+import { categorizeMessage } from "./categorize.js";
 import { applyFiltersToMessage } from "./filters.js";
 import { emit } from "./events.js";
 
@@ -41,11 +42,11 @@ const insertMessage = db.prepare(`
   INSERT INTO messages (
     account_id, folder_id, thread_id, uid, message_id, in_reply_to, references_json,
     subject, from_json, to_json, cc_json, bcc_json, date, flags_json,
-    unread, starred, size, preview, body_text, body_html, has_attachments
+    unread, starred, size, preview, body_text, body_html, has_attachments, category
   ) VALUES (
     @account_id, @folder_id, @thread_id, @uid, @message_id, @in_reply_to, @references_json,
     @subject, @from_json, @to_json, @cc_json, @bcc_json, @date, @flags_json,
-    @unread, @starred, @size, @preview, @body_text, @body_html, @has_attachments
+    @unread, @starred, @size, @preview, @body_text, @body_html, @has_attachments, @category
   )
 `);
 
@@ -134,6 +135,7 @@ export async function persistMessage(input: PersistInput): Promise<number | null
   const unread = !input.flags.includes("\\Seen");
   const starred = input.flags.includes("\\Flagged");
   const hasAttachments = (parsed.attachments?.length ?? 0) > 0;
+  const category = categorizeMessage(parsed, fromAddrs);
 
   const threadId = resolveThreadId({
     accountId: input.accountId,
@@ -171,6 +173,7 @@ export async function persistMessage(input: PersistInput): Promise<number | null
     body_text: parsed.text ?? null,
     body_html: parsed.html || null,
     has_attachments: hasAttachments ? 1 : 0,
+    category,
   }).lastInsertRowid as number;
 
   ftsInsert.run(

@@ -2,6 +2,7 @@ import type {
   AddressDto,
   FolderRole,
   MessageBodyDto,
+  MessageCategory,
   MessageSummaryDto,
   SearchQuery,
   TagDto,
@@ -44,6 +45,7 @@ interface MessageRow {
   body_text: string | null;
   body_html: string | null;
   has_attachments: number;
+  category: string;
 }
 
 function parseAddrs(json: string): AddressDto[] {
@@ -74,6 +76,7 @@ function messageRowToSummary(r: MessageRow): MessageSummaryDto {
     size: r.size,
     unread: !!r.unread,
     starred: !!r.starred,
+    category: (r.category === "promotions" ? "promotions" : "primary"),
   };
 }
 
@@ -197,7 +200,7 @@ export const messagesRepo = {
 };
 
 export const threadsRepo = {
-  list(opts: { folderRole?: FolderRole; accountId?: number; tag?: string; starred?: boolean; limit?: number; offset?: number; }): ThreadDto[] {
+  list(opts: { folderRole?: FolderRole; accountId?: number; category?: MessageCategory; tag?: string; starred?: boolean; limit?: number; offset?: number; }): ThreadDto[] {
     const limit = Math.min(opts.limit ?? 50, 200);
     const offset = opts.offset ?? 0;
     const where: string[] = [];
@@ -233,6 +236,24 @@ export const threadsRepo = {
     } else if (opts.accountId) {
       where.push(`t.id IN (SELECT thread_id FROM messages WHERE account_id = ?)`);
       params.push(opts.accountId);
+    }
+    // Inbox sub-tab (Gmail-style Primary / Promotions). A thread is
+    // "promotions" only when it has inbox messages and none of them are
+    // primary — so any human reply pulls the whole thread back to Primary.
+    // Primary and Promotions therefore partition the inbox exactly. Only
+    // applies to the inbox; other folders ignore category.
+    if (opts.category && opts.folderRole === "inbox") {
+      const acct = opts.accountId ? "AND m.account_id = ?" : "";
+      const hasPrimary = `t.id IN (
+        SELECT m.thread_id FROM messages m JOIN folders f ON f.id = m.folder_id
+        WHERE f.role = 'inbox' AND m.category = 'primary' ${acct}
+      )`;
+      if (opts.category === "primary") {
+        where.push(hasPrimary);
+      } else {
+        where.push(`NOT (${hasPrimary})`);
+      }
+      if (opts.accountId) params.push(opts.accountId);
     }
     if (opts.starred) {
       where.push(`t.id IN (

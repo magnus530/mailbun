@@ -73,6 +73,9 @@ export type FolderRole =
   | "archive"
   | "all";
 
+// Gmail-style inbox sub-tabs. Only meaningful for inbox-role messages.
+export type MessageCategory = "primary" | "promotions";
+
 export interface AddressDto {
   name: string | null;
   address: string;
@@ -98,6 +101,7 @@ export interface MessageSummaryDto {
   size: number;
   unread: boolean;
   starred: boolean;
+  category: MessageCategory;
 }
 
 export interface MessageBodyDto extends MessageSummaryDto {
