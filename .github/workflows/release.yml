@@ -55,6 +55,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
           # --- macOS code signing + notarization (macOS runner only) ---
+          # With no cert, electron-builder still tries to auto-discover a
+          # signing identity and fails ("<projectDir> not a file"). Disable
+          # discovery so unsigned mac builds package cleanly. Remove this once
+          # MAC_CSC_LINK is set and you actually want signing.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK == '' && 'false' || '' }}
           # CSC_LINK: base64 of your Developer ID Application .p12
           # CSC_KEY_PASSWORD: the .p12 export password
           CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK || '' }}
