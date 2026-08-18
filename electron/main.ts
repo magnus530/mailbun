@@ -1,9 +1,10 @@
 import { app, BrowserWindow, shell } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import electronUpdater from "electron-updater";
-
-const { autoUpdater } = electronUpdater;
+// electron-updater is CJS with named exports and no default export — a
+// default import resolves to undefined. `autoUpdater` is a lazy getter, so
+// it's only constructed when first accessed (inside app.whenReady below).
+import { autoUpdater } from "electron-updater";
 
 // Fixed port — the OAuth redirect URI registered with Google/Microsoft is
 // http://127.0.0.1:4100/api/oauth/callback, so the server must bind here.

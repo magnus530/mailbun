@@ -10,6 +10,9 @@ on:
       - "v*"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -28,22 +31,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # OAuth client IDs are baked into release builds. Stored as a repo
-      # secret (the whole credentials.ts file contents, base64-encoded) so
-      # they never live in the repo. Skipped if the secret isn't set —
-      # the build still works, users just fall back to .env.
+      # OAuth client IDs are baked into release builds. The whole
+      # electron/credentials.ts file is stored base64-encoded in the
+      # MAILBUN_CREDENTIALS_B64 secret so the IDs never live in the repo.
+      # If the secret is unset the build still succeeds — OAuth just shows
+      # as unconfigured.
       - name: Restore baked OAuth credentials
-        if: ${{ env.MAILBUN_CREDENTIALS_B64 != '' }}
         env:
           MAILBUN_CREDENTIALS_B64: ${{ secrets.MAILBUN_CREDENTIALS_B64 }}
         shell: bash
-        run: echo "$MAILBUN_CREDENTIALS_B64" | base64 -d > electron/credentials.ts
+        run: |
+          if [ -n "$MAILBUN_CREDENTIALS_B64" ]; then
+            echo "$MAILBUN_CREDENTIALS_B64" | openssl base64 -d -A > electron/credentials.ts
+            echo "credentials.ts restored from secret"
+          else
+            echo "no MAILBUN_CREDENTIALS_B64 secret set — OAuth will be unconfigured"
+          fi
 
       - name: Build and publish
+        shell: bash
         env:
-          # electron-builder publishes the artifacts to this repo's Releases.
+          # Lets electron-builder create the GitHub Release + upload assets.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run electron:build -- --publish always
 
-permissions:
-  contents: write
+          # --- macOS code signing + notarization (macOS runner only) ---
+          # CSC_LINK: base64 of your Developer ID Application .p12
+          # CSC_KEY_PASSWORD: the .p12 export password
+          CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+          # --- Windows code signing (Windows runner only) ---
+          # For a legacy .pfx: WIN_CSC_LINK = base64 of the .pfx.
+          # New OV/EV certs require a hardware token / cloud HSM — see the
+          # signing notes; that path needs a custom sign hook instead.
+          WIN_CSC_LINK: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_LINK || '' }}
+          WIN_CSC_KEY_PASSWORD: ${{ matrix.os == 'windows-latest' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
+        run: npm run electron:publish

@@ -21,11 +21,14 @@
     "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w client",
     "start": "node server/dist/index.js",
+    "icons": "node scripts/gen-icons.mjs",
     "electron:compile": "tsc -p electron/tsconfig.json",
     "electron:dev": "npm run electron:compile && run-p -r dev electron:dev:window",
     "electron:dev:window": "wait-on tcp:127.0.0.1:5173 && electron electron/dist/main.js",
     "server:bundle": "esbuild server/dist/server.js --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=server/bundle/server.cjs",
-    "electron:build": "npm run build && npm run server:bundle && npm run electron:compile && electron-builder"
+    "electron:build": "npm run build && npm run server:bundle && npm run electron:compile && electron-builder && npm run rebuild:node",
+    "electron:publish": "npm run build && npm run server:bundle && npm run electron:compile && electron-builder --publish always",
+    "rebuild:node": "npm rebuild better-sqlite3"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
@@ -36,6 +39,8 @@
     "electron-builder": "^25.1.8",
     "esbuild": "^0.24.0",
     "npm-run-all": "^4.1.5",
+    "png2icons": "^2.0.1",
+    "sharp": "^0.35.3",
     "typescript": "^5.6.0",
     "wait-on": "^8.0.1"
   }
