@@ -88,10 +88,12 @@ body { font-family: Inter, system-ui, sans-serif; }
   height: calc(100% / var(--zoom));
 }
 
-/* mailbun logo — the source PNG is a black silhouette. Invert it to white on
-   the dark theme (default); leave it black on the opt-in light theme. */
-.app-logo { filter: invert(1); }
-:root.theme-light .app-logo { filter: invert(0); }
+/* mailbun logo — no filter. The source PNG is now a full-colour brand mark
+   (white envelope on a blue squircle) that reads on both themes, so it must
+   render as authored. It used to be a black-on-transparent silhouette that
+   needed invert(1) to show up on the dark theme; inverting the current mark
+   turns the blue squircle amber and the envelope black, which is exactly the
+   favicon/sidebar mismatch this replaced. */
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }

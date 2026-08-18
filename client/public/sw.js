@@ -9,9 +9,18 @@
  *     attachments still open offline.
  */
 
-const SHELL_CACHE = "mailclient-shell-v1";
-const ATTACHMENTS_CACHE = "mailclient-attachments-v1";
-const SHELL_ASSETS = ["/", "/index.html", "/icon.svg", "/manifest.webmanifest"];
+// Bump SHELL_CACHE whenever a pre-cached shell asset changes — it's served
+// cache-first, so stale entries (e.g. an old icon.svg) otherwise persist.
+const SHELL_CACHE = "mailbun-shell-v3";
+const ATTACHMENTS_CACHE = "mailbun-attachments-v1";
+const SHELL_ASSETS = [
+  "/",
+  "/index.html",
+  "/icon.svg",
+  "/logo.png",
+  "/apple-touch-icon.png",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -57,11 +66,21 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // Static assets: cache-first.
+  // Shell assets (icons, manifest) keep a stable filename with no content
+  // hash, so a cache-first entry would pin the old bytes forever — changing
+  // the icon wouldn't change its URL. Revalidate them in the background
+  // instead: the user sees the cached copy now and the new one next load.
+  if (SHELL_ASSETS.includes(url.pathname)) {
+    e.respondWith(staleWhileRevalidate(request, SHELL_CACHE));
+    return;
+  }
+
+  // Everything under /assets/ IS content-hashed by Vite, so a URL match
+  // guarantees identical bytes — safe to serve cache-first indefinitely.
   e.respondWith(
     caches.match(request).then((cached) =>
       cached ?? fetch(request).then((res) => {
-        if (res.ok && (url.pathname.startsWith("/assets/") || SHELL_ASSETS.includes(url.pathname))) {
+        if (res.ok && url.pathname.startsWith("/assets/")) {
           const copy = res.clone();
           caches.open(SHELL_CACHE).then((c) => c.put(request, copy));
         }

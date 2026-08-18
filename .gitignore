@@ -1,6 +1,7 @@
 node_modules/
 dist/
-build/
+# NOTE: build/ is NOT ignored — it's electron-builder's buildResources dir and
+# holds the committed icon assets. Compiled output lives in dist/ instead.
 .env
 .env.local
 *.log

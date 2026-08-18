@@ -1,6 +1,6 @@
 {
-  "name": "mailclient",
-  "short_name": "mailclient",
+  "name": "Mailbun",
+  "short_name": "Mailbun",
   "description": "Local-first multi-account email client.",
   "start_url": "/",
   "scope": "/",
@@ -8,6 +8,8 @@
   "background_color": "#0b0e14",
   "theme_color": "#0b0e14",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
   ]
 }
