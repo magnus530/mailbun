@@ -37,6 +37,11 @@ publish:
 mac:
   category: public.app-category.productivity
   icon: build/icon.icns
+  # Explicitly skip code signing. Without a Developer ID cert, electron-builder
+  # otherwise attempts ad-hoc signing and aborts ("<projectDir> not a file").
+  # Produces an unsigned app — fine for testing (users right-click → Open).
+  # Set to your Developer ID identity once you have one.
+  identity: null
   target:
     - dmg          # user download
     - zip          # required for electron-updater auto-update on macOS
