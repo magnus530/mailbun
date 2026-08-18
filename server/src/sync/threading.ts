@@ -14,6 +14,7 @@ export function normalizeSubject(subject: string): string {
 }
 
 interface ThreadResolveInput {
+  accountId: number;
   messageId: string | null;
   inReplyTo: string | null;
   references: string[];
@@ -24,6 +25,16 @@ interface ThreadResolveInput {
   hasAttachments: boolean;
   unread: boolean;
   starred: boolean;
+}
+
+// The subject-only fallback (step 3) merges messages that share nothing but a
+// subject line, so it only fires when the subject actually carries signal.
+// One-word subjects like "a", "hi", "test", "invoice" recur constantly across
+// unrelated mail and would collapse everything titled the same into one thread.
+function subjectIsThreadable(normalized: string): boolean {
+  if (normalized.length < 6) return false;
+  // Require at least two words — a lone token is too weak a match on its own.
+  return normalized.split(" ").filter(Boolean).length >= 2;
 }
 
 const findByMessageIds = db.prepare<[string], { thread_id: number }>(
@@ -50,18 +61,27 @@ export function resolveThreadId(input: ThreadResolveInput): number {
     const hit = findByMessageIds.get(input.messageId);
     if (hit) return hit.thread_id;
   }
-  // 3) Subject-based fallback: same normalized subject within 14 days, between
-  //    overlapping participants. Conservative — only matches obvious follow-ups.
+  // 3) Subject-based fallback: same normalized subject within 14 days, in a
+  //    thread THIS account already participates in. Scoping to the account is
+  //    what stops a message in one account being glued into another account's
+  //    conversation on subject alone — headerless mail (empty References) has
+  //    no other tie, so an unscoped match leaks messages across accounts and
+  //    surfaces one account's Sent mail inside another's inbox. Only fires for
+  //    subjects with enough signal to be a meaningful match.
   const normalized = normalizeSubject(input.subject);
-  if (normalized.length > 0) {
+  if (subjectIsThreadable(normalized)) {
     const cutoff = input.date - 14 * 24 * 60 * 60 * 1000;
     const row = db
       .prepare(
-        `SELECT id FROM threads
-         WHERE subject_normalized = ? AND last_date >= ?
-         ORDER BY last_date DESC LIMIT 1`,
+        `SELECT t.id FROM threads t
+         WHERE t.subject_normalized = ? AND t.last_date >= ?
+           AND EXISTS (
+             SELECT 1 FROM messages m
+             WHERE m.thread_id = t.id AND m.account_id = ?
+           )
+         ORDER BY t.last_date DESC LIMIT 1`,
       )
-      .get(normalized, cutoff) as { id: number } | undefined;
+      .get(normalized, cutoff, input.accountId) as { id: number } | undefined;
     if (row) return row.id;
   }
   // 4) New thread.

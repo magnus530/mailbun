@@ -136,6 +136,7 @@ export async function persistMessage(input: PersistInput): Promise<number | null
   const hasAttachments = (parsed.attachments?.length ?? 0) > 0;
 
   const threadId = resolveThreadId({
+    accountId: input.accountId,
     messageId,
     inReplyTo,
     references,
