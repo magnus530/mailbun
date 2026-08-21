@@ -17,6 +17,13 @@ jobs:
   build:
     strategy:
       fail-fast: false
+      # Serialize the platforms. electron-builder's GitHub publisher has each
+      # job create-or-find the release for the tag; run in parallel they race,
+      # the release flips to non-draft mid-run, and later jobs skip their
+      # uploads ("existing type not compatible with publishing type"), leaving
+      # a release missing assets. One at a time: the first job creates the
+      # draft, the rest upload into it, then we publish once all have landed.
+      max-parallel: 1
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
