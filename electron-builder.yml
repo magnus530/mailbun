@@ -2,6 +2,9 @@ appId: com.mailbun.desktop
 productName: Mailbun
 copyright: Copyright © 2026
 
+# Ad-hoc sign the macOS app (see the script). No-op on Windows/Linux.
+afterPack: scripts/afterpack-adhoc-sign.cjs
+
 directories:
   output: release
   buildResources: build
