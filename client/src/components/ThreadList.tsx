@@ -366,9 +366,11 @@ function ThreadRow({
 }: {
   thread: ThreadDto; active: boolean; checked: boolean; onCheck: () => void; onClick: () => void;
 }) {
+  // Show each sender's full name (not just the first word) and let the
+  // fixed-width column's CSS `truncate` cut it off at the real edge.
   const fromText = thread.participants
     .slice(0, 3)
-    .map((a) => (a.name || a.address || "").split(" ")[0])
+    .map((a) => a.name || a.address || "")
     .filter(Boolean)
     .join(", ");
   const ago = formatRowDate(thread.lastDate);
