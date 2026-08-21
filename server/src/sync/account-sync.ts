@@ -89,7 +89,7 @@ export class AccountSync {
       accountsRepo.updateSyncedAt(this.accountId, Date.now());
       emit({ type: "sync:done", accountId: this.accountId });
     } catch (err: any) {
-      const msg = err?.message ?? String(err);
+      const msg = describeSyncError(err);
       this.log.error({ err }, "account sync failed");
       accountsRepo.setError(this.accountId, msg);
       emit({ type: "sync:error", accountId: this.accountId, error: msg });
@@ -222,6 +222,24 @@ export class AccountSync {
       this.client = null;
     }
   }
+}
+
+// Turn a raw sync error into a message worth showing the user. imapflow
+// collapses a failed login to a generic "Command failed"; the useful signal
+// is on the error object (authenticationFailed / responseText). Surface a
+// clear, actionable line for the common cases instead.
+export function describeSyncError(err: any): string {
+  if (err?.authenticationFailed || err?.serverResponseCode === "AUTHENTICATIONFAILED") {
+    return "Invalid credentials — check the email and password (some providers require an app password).";
+  }
+  if (/ENOTFOUND|EAI_AGAIN|getaddrinfo/i.test(err?.message ?? "")) {
+    return "Can't reach the mail server — check the IMAP host and your connection.";
+  }
+  if (/ECONNREFUSED|ETIMEDOUT|ECONN|ENETUNREACH/i.test(err?.message ?? "")) {
+    return "Connection to the mail server failed — check the IMAP host, port, and TLS setting.";
+  }
+  // Prefer the server's own response text over imapflow's collapsed message.
+  return err?.responseText || err?.message || String(err);
 }
 
 function priority(role: string | null): number {
