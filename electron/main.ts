@@ -6,6 +6,16 @@ import { pathToFileURL } from "node:url";
 // it's only constructed when first accessed (inside app.whenReady below).
 import { autoUpdater } from "electron-updater";
 
+// Prefer native Wayland when running in a Wayland session, falling back to
+// X11 otherwise. Without this, a packaged Linux build launched from a desktop
+// launcher (which doesn't inherit the shell's ELECTRON_OZONE_PLATFORM_HINT)
+// runs under XWayland, where the render buffer and the compositor's size
+// desync under a tiling WM — the window won't reflow when tiled smaller.
+// "auto" is a no-op on X11/macOS/Windows. Must run before app is ready.
+if (process.platform === "linux") {
+  app.commandLine.appendSwitch("ozone-platform-hint", "auto");
+}
+
 // Fixed port — the OAuth redirect URI registered with Google/Microsoft is
 // http://127.0.0.1:4100/api/oauth/callback, so the server must bind here.
 const PORT = 4100;
